@@ -228,11 +228,14 @@
 				presupuesto: state.budget,
 				peso_estimado: state.weight,
 				talla_medida: state.size,
-				sugerencias: (state.notes || '') + ' Cambios solicitados: ' + cambios,
+				sugerencias: state.notes,
+				imagen_referencia_url: state._lastImagenUrl,
+				cambios_solicitados: cambios,
 			});
 
 			if (imagenContainer && result?.imagenUrl) {
 				imagenContainer.innerHTML = `<img src="${result.imagenUrl}" style="max-width:100%; border-radius:8px;" />`;
+				state._lastImagenUrl = result.imagenUrl;
 			}
 
 			const cambiosPanel = document.getElementById('cambios-panel');
@@ -261,6 +264,8 @@
 	function showSuccessScreen(state, imagenUrl) {
 		const main = document.querySelector('main') || document.querySelector('.flex-1');
 		if (!main) return;
+
+		state._lastImagenUrl = imagenUrl;
 
 		main.innerHTML = `
 			<div class="max-w-3xl mx-auto px-4 py-12 text-center" style="animation: fadeInUp 0.8s ease-out;">
