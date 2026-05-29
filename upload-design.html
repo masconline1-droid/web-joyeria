@@ -250,7 +250,7 @@
 					imagen_subida_url: imagenSubidaUrl,
 				});
 
-				showUploadSuccess({ nombre, telefono, email, categoria, material, gemstone, style, instructions: instrucciones }, result?.imagenFrontal || result?.imagenUrl || null, result?.imagenTrasera || null, result?.imagenLateral || null);
+				showUploadSuccess({ nombre, telefono, email, categoria, material, instructions: instrucciones }, result?.imagenFrontal || result?.imagenUrl || null, result?.imagenTrasera || null, result?.imagenLateral || null);
 
 			} catch (error) {
 				console.error('Error:', error);
@@ -415,16 +415,23 @@
 						email: _uploadState.data.email,
 						categoria_producto: _uploadState.data.categoria,
 						material: _uploadState.data.material,
-						gema_principal: _uploadState.data.gemstone,
-						estilo: _uploadState.data.style,
 						sugerencias: _uploadState.data.instructions,
 						imagen_referencia_url: _uploadState.imagenUrl,
 						cambios_solicitados: cambios,
+						is_redesign: true
 					});
 
-					if (imagenContainer && result?.imagenUrl) {
-						imagenContainer.innerHTML = `<img src="${result.imagenUrl}" style="max-width:100%; border-radius:8px;" />`;
-						_uploadState.imagenUrl = result.imagenUrl;
+					if (imagenContainer && (result?.imagenFrontal || result?.imagenUrl)) {
+						const mainImg = result.imagenFrontal || result.imagenUrl;
+						_uploadState.imagenUrl = mainImg;
+						
+						imagenContainer.innerHTML = `
+							${mainImg ? `<div class="view-item"><p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif;">Vista Frontal</p><img loading="lazy" src="${mainImg}" /></div>` : ''}
+							${result.imagenTrasera ? `<div class="view-item"><p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif;">Vista Trasera</p><img loading="lazy" src="${result.imagenTrasera}" /></div>` : ''}
+							${result.imagenLateral ? `<div class="view-item"><p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif;">Vista Lateral</p><img loading="lazy" src="${result.imagenLateral}" /></div>` : ''}
+						`;
+						
+						imagenContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 					}
 					const panel = document.getElementById('cambios-panel');
 					if (panel) panel.style.display = 'none';

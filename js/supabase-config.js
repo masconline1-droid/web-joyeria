@@ -108,11 +108,13 @@ async function initHeaderAuth() {
 			const container = document.createElement('div');
 			container.style.cssText = 'position:relative; display:flex; align-items:center; gap:24px;';
 			container.innerHTML = `
-				<div id="header-credits-badge" onclick="alert('La compra de créditos estará disponible muy pronto')" style="background:linear-gradient(135deg, hsl(45 90% 92%) 0%, hsl(45 80% 86%) 100%); border:1px solid hsl(45 70% 65%); color:hsl(45 90% 20%); padding:6px 16px; border-radius:100px; display:flex; align-items:center; gap:8px; font-family:ui-sans-serif, system-ui, sans-serif; font-size:0.9rem; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,0.06); cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'" title="Tus créditos - Haz clic para añadir más">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
-					<span id="credit-count-header">${credits}</span>
-					<span style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em; opacity:0.8; font-weight:600;">Créditos</span>
-					<span style="background:white; color:hsl(45 90% 20%); width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; margin-left:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">+</span>
+				<div id="header-credits-badge" onclick="alert('La compra de créditos estará disponible muy pronto')" style="background:linear-gradient(135deg, hsl(45 95% 95%) 0%, hsl(45 90% 88%) 100%); border:1px solid hsl(45 70% 60%); color:hsl(45 100% 15%); padding:6px 14px; border-radius:100px; display:flex; align-items:center; gap:10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:0.9rem; font-weight:800; box-shadow:0 4px 12px rgba(212,175,55,0.15); cursor:pointer; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); user-select:none;" onmouseover="this.style.transform='translateY(-1px) scale(1.02)'; this.style.boxShadow='0 6px 15px rgba(212,175,55,0.25)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(212,175,55,0.15)'" title="Tus créditos - Haz clic para añadir más">
+					<div style="display:flex; align-items:center; gap:6px;">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+						<span id="credit-count-header" style="font-feature-settings: 'tnum' 1; min-width: 1.5ch; text-align: center;">${credits}</span>
+					</div>
+					<span style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; opacity:0.9; font-weight:700; border-left:1px solid rgba(0,0,0,0.1); padding-left:10px; margin-left:2px;">Créditos</span>
+					<div style="background:white; color:hsl(45 100% 20%); width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.1);">+</div>
 				</div>
 
 				<div style="position:relative;">

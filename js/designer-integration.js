@@ -169,7 +169,7 @@
 				sugerencias: state.notes,
 			});
 
-			showSuccessScreen(state, result?.imagenUrl || null);
+			showSuccessScreen(state, result?.imagenUrl || null, result?.imagenTrasera || null, result?.imagenLateral || null);
 			clearState();
 
 		} catch (error) {
@@ -233,13 +233,42 @@
 				cambios_solicitados: cambios,
 			});
 
-			if (imagenContainer && result?.imagenUrl) {
-				imagenContainer.innerHTML = `<img src="${result.imagenUrl}" style="max-width:100%; border-radius:8px;" />`;
-				state._lastImagenUrl = result.imagenUrl;
+			if (imagenContainer && (result?.imagenFrontal || result?.imagenUrl)) {
+				const mainImg = result.imagenFrontal || result.imagenUrl;
+				state._lastImagenUrl = mainImg;
+
+				imagenContainer.innerHTML = `
+					<div class="views-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; width:100%; margin-top:20px;">
+						<div class="view-item">
+							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.1em;">Vista Frontal</p>
+							<img src="${mainImg}" style="width:100%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.1);" />
+						</div>
+						${result.imagenTrasera ? `
+						<div class="view-item">
+							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.1em;">Vista Trasera</p>
+							<img src="${result.imagenTrasera}" style="width:100%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.1);" />
+						</div>
+						` : ''}
+						${result.imagenLateral ? `
+						<div class="view-item">
+							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.1em;">Vista Lateral</p>
+							<img src="${result.imagenLateral}" style="width:100%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.1);" />
+						</div>
+						` : ''}
+					</div>
+				`;
+				
+				// Scroll suave al resultado
+				imagenContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			}
 
 			const cambiosPanel = document.getElementById('cambios-panel');
 			if (cambiosPanel) cambiosPanel.style.display = 'none';
+
+			if (redesignBtn) {
+				redesignBtn.disabled = false;
+				redesignBtn.textContent = 'Rediseñar';
+			}
 
 		} catch (error) {
 			console.error('Error rediseñando:', error);
@@ -261,46 +290,53 @@
 		panel.style.display = visible ? 'none' : 'block';
 	}
 
-	function showSuccessScreen(state, imagenUrl) {
+	function showSuccessScreen(state, imagenUrl, imagenTrasera, imagenLateral) {
 		const main = document.querySelector('main') || document.querySelector('.flex-1');
 		if (!main) return;
 
 		state._lastImagenUrl = imagenUrl;
+		const hasImages = imagenUrl || imagenTrasera || imagenLateral;
 
 		main.innerHTML = `
-			<div class="max-w-3xl mx-auto px-4 py-12 text-center" style="animation: fadeInUp 0.8s ease-out;">
+			<div class="max-w-4xl mx-auto px-4 py-8 text-center" style="animation: fadeInUp 0.8s ease-out;">
 				<div class="mb-8">
-					<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none"
+					<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none"
 					     stroke="hsl(120, 40%, 40%)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
-					     style="margin: 0 auto 1.5rem;">
+					     style="margin: 0 auto 1rem;">
 						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
 						<polyline points="22 4 12 14.01 9 11.01"/>
 					</svg>
-					<h1 class="text-4xl md:text-5xl text-foreground tracking-widest uppercase font-medium mb-4">
+					<h1 class="text-3xl md:text-4xl text-foreground tracking-widest uppercase font-medium mb-3">
 						¡Diseño Creado!
 					</h1>
-					<p class="text-muted-foreground font-sans tracking-wide max-w-lg mx-auto text-lg">
+					<p class="text-muted-foreground font-sans tracking-wide max-w-lg mx-auto text-base">
 						Hemos recibido tu solicitud, <strong>${state.name}</strong>.
 						Te contactaremos pronto en <strong>${state.email}</strong>.
 					</p>
 				</div>
 
-				${imagenUrl ? `
-				<div class="bg-white p-8 rounded-2xl shadow-lg border border-border/50 mb-8"
+				<div class="bg-white p-6 md:p-10 rounded-2xl shadow-lg border border-border/50 mb-8"
 				     style="animation: fadeInUp 0.8s ease-out 0.2s both;">
-					<h2 class="text-xl tracking-widest uppercase text-foreground font-medium mb-4">Tu Diseño Generado</h2>
-					<div id="imagen-generada">
-						<img src="${imagenUrl}" style="max-width:100%; border-radius:8px;" />
+					<h2 class="text-xl tracking-widest uppercase text-foreground font-medium mb-6">Tu Diseño en 3 Vistas</h2>
+					<div id="imagen-generada" style="${hasImages ? 'display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:24px; text-align:center;' : ''}">
+						${imagenUrl ? `
+						<div class="view-item">
+							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.12em; font-family:sans-serif;">Vista Frontal</p>
+							<img src="${imagenUrl}" style="width:100%; border-radius:12px; border:1px solid #eee; background:#fafafa; box-shadow:0 8px 25px rgba(0,0,0,0.06);" />
+						</div>` : ''}
+						${imagenTrasera ? `
+						<div class="view-item">
+							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.12em; font-family:sans-serif;">Vista Trasera</p>
+							<img src="${imagenTrasera}" style="width:100%; border-radius:12px; border:1px solid #eee; background:#fafafa; box-shadow:0 8px 25px rgba(0,0,0,0.06);" />
+						</div>` : ''}
+						${imagenLateral ? `
+						<div class="view-item">
+							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.12em; font-family:sans-serif;">Vista Lateral</p>
+							<img src="${imagenLateral}" style="width:100%; border-radius:12px; border:1px solid #eee; background:#fafafa; box-shadow:0 8px 25px rgba(0,0,0,0.06);" />
+						</div>` : ''}
+						${!hasImages ? '<p class="text-muted-foreground font-sans">Tu diseño está siendo procesado. Recibirás un email con el resultado en breve.</p>' : ''}
 					</div>
-				</div>` : `
-				<div class="bg-white p-8 rounded-2xl shadow-lg border border-border/50 mb-8"
-				     style="animation: fadeInUp 0.8s ease-out 0.2s both;">
-					<div id="imagen-generada">
-						<p class="text-muted-foreground font-sans">
-							Tu diseño está siendo procesado. Recibirás un email con el resultado en breve.
-						</p>
-					</div>
-				</div>`}
+				</div>
 
 				<div id="cambios-panel" style="display:none;" class="bg-white p-6 rounded-2xl shadow-lg border border-border/50 mb-6 text-left">
 					<p class="text-sm tracking-widest uppercase text-muted-foreground font-sans font-medium mb-3">Describe los cambios</p>
