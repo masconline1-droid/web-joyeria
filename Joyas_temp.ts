@@ -102,6 +102,11 @@ serve(async (req) => {
   const { data: { user } } = await supabaseAdmin.auth.getUser(userToken);
   if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
 
+  // Security Restriction: Only allowed user for now
+  if (user.email !== 'flozros@gmail.com') {
+    return new Response(JSON.stringify({ error: "Acceso restringido (Modo Beta)" }), { status: 403, headers: corsHeaders });
+  }
+
   const credits = user.user_metadata?.credits ?? 0;
   if (credits <= 0) return new Response(JSON.stringify({ error: "No credits" }), { status: 402, headers: corsHeaders });
 
