@@ -300,20 +300,30 @@ async function initWhenReady(callback) {
 		const isLoginPage = window.location.pathname.includes('login.html');
 		
 		if (!isLoginPage && (!session || session.user.email !== authorizedEmail)) {
-			console.log('Acceso restringido. Redirigiendo a pantalla de bloqueo...');
-			document.body.innerHTML = `
-				<div style="height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#000; color:#fff; font-family:'Cormorant Garamond', serif; text-align:center; padding:20px; box-sizing:border-box;">
-					<img src="./logo-romet.png" style="height:80px; margin-bottom:30px; filter:brightness(0) invert(1);">
-					<h1 style="font-size:2rem; letter-spacing:0.2em; text-transform:uppercase; margin-bottom:15px;">Sitio en Mantenimiento</h1>
-					<p style="font-family: ui-sans-serif, system-ui, sans-serif; color:#888; max-width:400px; line-height:1.6; font-size:0.9rem;">
-						Estamos realizando mejoras de seguridad en Romet Joyería. <br>
-						El acceso al catálogo estará disponible próximamente.
-					</p>
-					<a href="./login.html" style="margin-top:30px; color:#fff; text-transform:uppercase; font-size:0.7rem; letter-spacing:0.1em; text-decoration:none; border:1px solid #333; padding:12px 24px; transition: background 0.3s;" onmouseover="this.style.background='#111'" onmouseout="this.style.background='transparent'">Acceso Administrador</a>
-				</div>
+			// Inyectar CSS de emergencia para ocultar TODO antes de que se vea nada
+			const style = document.createElement('style');
+			style.innerHTML = 'body { display: none !important; }';
+			document.head.appendChild(style);
+
+			console.log('Acceso restringido. Modo Seguridad Activo.');
+			
+			// Reemplazar el body con una estructura estática y ciega
+			document.documentElement.innerHTML = `
+				<head>
+					<title>Romet Joyería - Mantenimiento</title>
+					<style>
+						body { margin:0; background:#000; color:#fff; display:flex !important; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:serif; }
+						.logo { height:80px; margin-bottom:40px; filter:brightness(0) invert(1); opacity:0.8; }
+						.msg { letter-spacing:0.3em; text-transform:uppercase; font-size:1.2rem; border-top:1px solid #333; border-bottom:1px solid #333; padding:20px 0; width:300px; text-align:center; }
+					</style>
+				</head>
+				<body>
+					<img src="./logo-romet.png" class="logo">
+					<div class="msg">Cerrado Temporalmente</div>
+				</body>
 			`;
-			document.body.style.overflow = 'hidden';
-			return; // Detener ejecución
+			window.stop(); // Detener toda carga de scripts adicionales
+			return;
 		}
 
 		if (callback) callback();
