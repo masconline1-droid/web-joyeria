@@ -38,8 +38,7 @@ const MATERIAL_LABELS: Record<string, string> = {
 // Switching to GA model gemini-3.1-flash-image (available since May 2026)
 // This model supports native IMAGE output and maintains better consistency across parallel requests.
 const GEMINI_MODEL = "gemini-3.1-flash-image";
-const GEMINI_URL = (key: string) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 // Rule appended to EVERY prompt to prevent Gemini adding text/logos/watermarks
 const NO_TEXT_RULE = `
@@ -60,9 +59,12 @@ async function generateView(
   parts.push({ text: prompt });
 
   try {
-    const res = await fetch(GEMINI_URL(apiKey), {
+    const res = await fetch(GEMINI_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
       body: JSON.stringify({
         contents: [{ parts }],
         generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
