@@ -316,9 +316,9 @@
 
 				<div class="bg-white p-6 rounded-2xl shadow-lg border border-border/50 text-left mb-8"
 				     style="animation: fadeInUp 0.8s ease-out 0.4s both;">
-					<h2 class="text-xl tracking-widest uppercase text-foreground font-medium mb-4">Summary del Diseño</h2>
+					<h2 class="text-xl tracking-widest uppercase text-foreground font-medium mb-4">Design Summary</h2>
 					<div class="grid grid-cols-2 gap-4 font-sans text-sm">
-						${state.category ? `<div><span class="text-muted-foreground">Tipo:</span> <strong class="capitalize">${state.category}</strong></div>` : ''}
+						${state.category ? `<div><span class="text-muted-foreground">Type:</span> <strong class="capitalize">${state.category}</strong></div>` : ''}
 						${state.material ? `<div><span class="text-muted-foreground">Material:</span> <strong class="capitalize">${state.material.replace(/_/g, ' ')}</strong></div>` : ''}
 						${state.gemstone ? `<div><span class="text-muted-foreground">Gemstone:</span> <strong class="capitalize">${state.gemstone}</strong></div>` : ''}
 						${state.style ? `<div><span class="text-muted-foreground">Style:</span> <strong class="capitalize">${state.style}</strong></div>` : ''}
@@ -339,7 +339,7 @@
 						               text-align: center; width: 185px; height: 185px;
 						               display: flex; align-items: center; justify-content: center;
 						               padding: 16px; line-height: 1.3;">
-							¿QUIERES HACER ALGÚN CAMBIO?
+							WOULD YOU LIKE TO MAKE ANY CHANGES?
 						</button>
 
 						<a href="#"
