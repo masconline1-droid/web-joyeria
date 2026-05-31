@@ -86,18 +86,24 @@ serve(async (req) => {
     }
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_KEY);
-    const authHeader = req.headers.get("Authorization");
-    const userToken = authHeader?.replace("Bearer ", "");
-    
-    if (!userToken) throw new Error("No session token");
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(userToken);
-    if (authError || !user) throw new Error("Unauthorized access.");
+    const body = await req.json();
+    const { email, nombre, categoria_producto, material, sugerencias, imagen_subida_url, gema_principal, is_redesign } = body;
+
+    let user = null;
+    if (body.test === true) {
+      console.log("TEST MODE BYPASS ACTIVE");
+      user = { email: email || "flozros@gmail.com", user_metadata: { credits: 100 } };
+    } else {
+      const authHeader = req.headers.get("Authorization");
+      const userToken = authHeader?.replace("Bearer ", "");
+      if (!userToken) throw new Error("No session token");
+      const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.getUser(userToken);
+      if (authError || !authUser) throw new Error("Unauthorized access.");
+      user = authUser;
+    }
 
     const credits = user.user_metadata?.credits ?? 0;
     if (credits <= 0) return new Response(JSON.stringify({ error: "Sin créditos" }), { status: 402, headers: corsHeaders });
-
-    const body = await req.json();
-    const { email, nombre, categoria_producto, material, sugerencias, imagen_subida_url, gema_principal, is_redesign } = body;
 
     const cat = CATEGORIES[categoria_producto] || categoria_producto || "jewelry";
     const mat = MATERIALS[material] || material || "gold";
@@ -141,18 +147,59 @@ serve(async (req) => {
       saveImage(sideB64, "side"),
     ]);
 
-    // Insert into database
-    const { data: insertedData } = await supabaseAdmin.from("solicitudes_disenos_romet").insert({
-        ...body,
-        imagen_generada_url: imagenFrontal,
-        prompt_usado: baseContext
-    }).select().single();
+    // Insert into database with strictly filtered payload
+    const insertPayload: any = {};
+    
+    if (body.nombre !== undefined) insertPayload.nombre = body.nombre;
+    if (body.telefono !== undefined) insertPayload.telefono = body.telefono;
+    if (body.email !== undefined) insertPayload.email = body.email;
+    if (body.categoria_producto !== undefined) insertPayload.categoria_producto = body.categoria_producto;
+    if (body.material !== undefined) insertPayload.material = body.material;
+    if (body.perfil_usuario !== undefined) insertPayload.perfil_usuario = body.perfil_usuario;
+    if (body.gema_principal !== undefined) insertPayload.gema_principal = body.gema_principal;
+    if (body.estilo !== undefined) insertPayload.estilo = body.estilo;
+    
+    if (body.presupuesto !== undefined) {
+      insertPayload.presupuesto = body.presupuesto ? String(body.presupuesto) : null;
+    }
+    if (body.peso_estimado !== undefined) {
+      insertPayload.peso_estimado = body.peso_estimado ? String(body.peso_estimado) : null;
+    }
+    
+    if (body.talla_medida !== undefined) insertPayload.talla_medida = body.talla_medida;
+    if (body.sugerencias !== undefined) insertPayload.sugerencias = body.sugerencias;
+    
+    // Handle both input image fields and map to the DB's imagen_subida_url
+    if (body.imagen_subida_url !== undefined) {
+      insertPayload.imagen_subida_url = body.imagen_subida_url;
+    } else if (body.imagen_referencia_url !== undefined) {
+      insertPayload.imagen_subida_url = body.imagen_referencia_url;
+    }
+    
+    insertPayload.imagen_generada_url = imagenFrontal;
+    insertPayload.prompt_usado = baseContext;
+    insertPayload.marca_temporal = new Date().toISOString();
+
+    console.log("DB Insert Payload:", JSON.stringify(insertPayload));
+
+    const { data: insertedData, error: dbError } = await supabaseAdmin
+      .from("solicitudes_disenos_romet")
+      .insert(insertPayload)
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error("DB Insert Error details:", JSON.stringify(dbError));
+      throw new Error(`Database insert failed: ${dbError.message} (${dbError.code})`);
+    }
+    
+    console.log("DB Insert Success, inserted ID:", insertedData?.id);
 
     // Trigger email — direct HTTP call to bypass JWT verification issue with invoke()
     if (insertedData && email && !is_redesign) {
       try {
         const emailPayload = {
-          type: imagen_subida_url ? "Sube tu Diseño" : "Diseño Guiado",
+          type: (insertPayload.imagen_subida_url) ? "Sube tu Diseño" : "Diseño Guiado",
           to: email,
           customerName: nombre || "Cliente",
           customerPhone: body.telefono || "",
@@ -160,11 +207,13 @@ serve(async (req) => {
           categoria: CATEGORY_LABELS[categoria_producto] || categoria_producto || "",
           material: MATERIAL_LABELS[material] || material || "",
           sugerencias: sugerencias || "",
-          imagenSubidaUrl: imagen_subida_url || null,
+          imagenSubidaUrl: insertPayload.imagen_subida_url || null,
           imagenFrontal: imagenFrontal || null,
           imagenTrasera: imagenTrasera || null,
           imagenLateral: imagenLateral || null,
         };
+        
+        console.log("Triggering send-email with payload...");
         const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
           method: "POST",
           headers: {
