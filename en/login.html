@@ -668,6 +668,12 @@
 		// ═══════════════════════════════════════
 
 		function onLoginSuccess(user) {
+			if (user.user_metadata?.approved !== true) {
+				showMessage('Your account has been registered and is pending manual approval by the Romet Joyería administrator. We will notify you once it is activated.', 'success');
+				getClientAsync().then(client => client.auth.signOut());
+				return;
+			}
+
 			const name = user.user_metadata?.first_name || user.user_metadata?.full_name || user.email.split('@')[0];
 			showMessage('Welcome, ' + name + '! Redirecting...', 'success');
 			setTimeout(() => {
@@ -727,7 +733,7 @@
 			if (data.session) {
 				onLoginSuccess(data.user);
 			} else {
-				showMessage('Account created! Check your email to confirm it before signing in.', 'success');
+				showMessage('Account created! Check your email to confirm it. Your account will be active once the administrator manually approves it.', 'success');
 				setLoading('registerBtn', false);
 			}
 		}
@@ -804,6 +810,10 @@
 
 			client.auth.getSession().then(({ data: { session } }) => {
 				if (session) {
+					if (session.user.user_metadata?.approved !== true && session.user.email !== 'flozros@gmail.com') {
+						client.auth.signOut();
+						return;
+					}
 					const redirect = sessionStorage.getItem('redirectAfterLogin') || './index.html';
 					sessionStorage.removeItem('redirectAfterLogin');
 					window.location.href = redirect;

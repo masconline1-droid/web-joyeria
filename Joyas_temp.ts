@@ -110,6 +110,11 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(userToken);
     if (authError || !user) throw new Error("Unauthorized");
 
+    const approved = user.user_metadata?.approved === true;
+    if (!approved) {
+      return new Response(JSON.stringify({ error: "Cuenta pendiente de aprobación manual por el administrador de Romet Joyería." }), { status: 403, headers: corsHeaders });
+    }
+
     const credits = user.user_metadata?.credits ?? 0;
     if (credits <= 0) {
       return new Response(JSON.stringify({ error: "Sin créditos" }), { status: 402, headers: corsHeaders });

@@ -45,7 +45,7 @@ async function initWhenReady(callback) {
 		const authorizedEmail = 'flozros@gmail.com';
 		const isLoginPage = window.location.pathname.includes('login.html');
 		
-		if (!isLoginPage && (!session || session.user.email !== authorizedEmail)) {
+		if (!isLoginPage && (!session || (session.user.email !== authorizedEmail && session.user.user_metadata?.approved !== true))) {
 			console.log('Acceso restringido. Redirigiendo a pantalla de bloqueo...');
 			document.body.innerHTML = `
 				<div style="height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#000; color:#fff; font-family:'Cormorant Garamond', serif; text-align:center; padding:20px;">
