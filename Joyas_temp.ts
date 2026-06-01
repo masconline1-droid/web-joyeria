@@ -323,8 +323,8 @@ ${reglasRender}`;
       console.log("DB Insert OK, ID:", insertedData?.id);
     }
 
-    // ── Send emails via Resend (solo en generaciones nuevas, no retoques) ──
-    if (email && RESEND_API_KEY && !esRetoque) {
+    // ── Send emails via Resend (se envía tanto en nuevas solicitudes como en retoques) ──
+    if (email && RESEND_API_KEY) {
       const emailImageHtml = `
         <div style="text-align:center; margin:20px 0;">
           <img src="${imagenUrl}" style="max-width:100%; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.1);" alt="Diseño generado" />
@@ -336,6 +336,15 @@ ${reglasRender}`;
         "Content-Type": "application/json",
       };
 
+      const ownerSubject = esRetoque
+        ? `🔄 Ajuste de diseño: ${CATEGORY_LABELS[categoria_producto] || categoria_producto || "Joya"} — ${nombre || "Cliente"}`
+        : `⚡ Nueva solicitud: ${CATEGORY_LABELS[categoria_producto] || categoria_producto || "Joya"} — ${nombre || "Cliente"}`;
+
+      const ownerIntro = esRetoque
+        ? `<h2 style="color:#b8860b;">Ajuste de diseño solicitado</h2>
+           <p>El cliente ha pedido cambios sobre el diseño anterior: <strong style="color:#e53e3e;">"${cambios_solicitados || sugerencias}"</strong></p>`
+        : `<h2 style="color:#b8860b;">Nueva solicitud de diseño</h2>`;
+
       // Email al propietario
       try {
         const ownerRes = await fetch("https://api.resend.com/emails", {
@@ -344,11 +353,11 @@ ${reglasRender}`;
           body: JSON.stringify({
             from: "Romet Joyería <no-reply@rometjoyeria.com>",
             to: [PROPIETARIO_EMAIL],
-            subject: `⚡ Nueva solicitud: ${CATEGORY_LABELS[categoria_producto] || categoria_producto || "Joya"} — ${nombre || "Cliente"}`,
+            subject: ownerSubject,
             html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;">
-              <h2 style="color:#b8860b;">Nueva solicitud de diseño</h2>
-              <table style="width:100%;border-collapse:collapse;">
-                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Nombre</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${nombre || ""}</td></tr>
+              ${ownerIntro}
+              <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;width:120px;"><strong>Nombre</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${nombre || ""}</td></tr>
                 <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Teléfono</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${telefono || ""}</td></tr>
                 <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Email</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${email || ""}</td></tr>
                 <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Categoría</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${CATEGORY_LABELS[categoria_producto] || categoria_producto || ""}</td></tr>
@@ -358,7 +367,8 @@ ${reglasRender}`;
                 <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Perfil</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${perfil_usuario || ""}</td></tr>
                 <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Presupuesto</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${presupuesto ? presupuesto + "€" : ""}</td></tr>
                 <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Talla</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${talla_medida || ""}</td></tr>
-                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Sugerencias</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${sugerencias || ""}</td></tr>
+                ${esRetoque ? `<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#e53e3e;"><strong>Cambios</strong></td><td style="padding:8px;border-bottom:1px solid #eee;color:#e53e3e;"><strong>${cambios_solicitados || sugerencias || ""}</strong></td></tr>` : ""}
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Notas iniciales</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${sugerencias || ""}</td></tr>
                 <tr><td style="padding:8px;"><strong>Fecha</strong></td><td style="padding:8px;">${marca_temporal}</td></tr>
               </table>
               ${emailImageHtml}
@@ -368,6 +378,14 @@ ${reglasRender}`;
         console.log("Owner email status:", ownerRes.status);
       } catch(e) { console.error("Owner email error:", e); }
 
+      const clientSubject = esRetoque
+        ? `Tu diseño de joya ajustado — Romet Joyería`
+        : `Tu diseño de joya personalizado — Romet Joyería`;
+
+      const clientIntro = esRetoque
+        ? `<p>Hemos realizado las modificaciones solicitadas a tu diseño. Aquí tienes la nueva versión con los ajustes aplicados:</p>`
+        : `<p>Hemos generado tu joya personalizada. Nos pondremos en contacto contigo muy pronto para hacerla realidad.</p>`;
+
       // Email al cliente
       try {
         const clientRes = await fetch("https://api.resend.com/emails", {
@@ -376,16 +394,16 @@ ${reglasRender}`;
           body: JSON.stringify({
             from: "Romet Joyería <no-reply@rometjoyeria.com>",
             to: [email],
-            subject: "Tu diseño de joya personalizado — Romet Joyería",
+            subject: clientSubject,
             html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
               <h2 style="color:#b8860b;">Hola ${nombre || ""}, aquí tienes tu diseño</h2>
-              <p>Hemos generado tu joya personalizada. Nos pondremos en contacto contigo muy pronto para hacerla realidad.</p>
+              ${clientIntro}
               ${emailImageHtml}
               <table style="width:100%;border-collapse:collapse;margin-top:24px;">
-                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Categoría</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${CATEGORY_LABELS[categoria_producto] || categoria_producto || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;width:120px;"><strong>Categoría</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${CATEGORY_LABELS[categoria_producto] || categoria_producto || ""}</td></tr>
                 <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Material</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${MATERIAL_LABELS[material] || material || ""}</td></tr>
                 <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Gema</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${gema_principal || ""}</td></tr>
-                <tr><td style="padding:8px;"><strong>Sugerencias</strong></td><td style="padding:8px;">${sugerencias || ""}</td></tr>
+                ${esRetoque ? `<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#e53e3e;"><strong>Cambios solicitados</strong></td><td style="padding:8px;border-bottom:1px solid #eee;color:#e53e3e;"><strong>${cambios_solicitados || sugerencias || ""}</strong></td></tr>` : ""}
               </table>
               <p style="margin-top:24px;color:#888;">Con cariño, el equipo de Romet Joyería</p>
             </div>`,
