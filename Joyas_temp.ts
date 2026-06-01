@@ -164,6 +164,13 @@ ${sugerencias ? "- Design notes: " + sugerencias : ""}`;
 - Do NOT mix in other jewelry pieces or accessories
 - Small labels at the bottom of each panel: FRONT | BACK | SIDE`;
 
+    const reglasEncuadre = `FRAMING & COMPOSITION (STRICTLY REQUIRED TO PREVENT CROP/CUTOFF):
+- The entire jewelry piece MUST be 100% FULLY VISIBLE and perfectly centered inside EACH of the three vertical panels.
+- ⚠️ NEVER crop, cut off, chop, or truncate any edge or part of the jewelry piece in any of the panels.
+- There MUST be a generous, comfortable clear empty white margin (at least 20% to 25% padding/negative space) all around the jewelry piece inside every panel.
+- No part, edge, prong, chain link, or detail of the jewelry should ever touch or go beyond the boundaries of any panel.
+- The object must look perfectly framed and whole in all three angles, showing the entire silhouette.`;
+
     const reglasRender = `RENDERING QUALITY:
 - Pure white seamless studio background
 - Professional jewelry photography lighting (softbox top-left + fill right + rim backlight)
@@ -195,6 +202,8 @@ ${reglasEstilo}
 
 ${reglasVistas}
 
+${reglasEncuadre}
+
 ${reglasRender}
 
 CRITICAL: The result must be immediately recognizable as the SAME piece from the attached image, with ONLY the requested change applied. Preserve original form, proportions, letters, motifs and all unchanged details.`;
@@ -212,6 +221,8 @@ ${reglasEstilo}
 
 ${reglasVistas}
 
+${reglasEncuadre}
+
 ${reglasRender}`;
 
     } else {
@@ -224,6 +235,8 @@ ${glosarioInyectado}
 ${reglasEstilo}
 
 ${reglasVistas}
+
+${reglasEncuadre}
 
 ${reglasRender}`;
     }
