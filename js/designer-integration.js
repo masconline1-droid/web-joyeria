@@ -169,7 +169,7 @@
 				sugerencias: state.notes,
 			});
 
-			showSuccessScreen(state, result?.imagenUrl || null, result?.imagenTrasera || null, result?.imagenLateral || null);
+			showSuccessScreen(state, result?.imagenUrl || null);
 			clearState();
 
 		} catch (error) {
@@ -229,37 +229,13 @@
 				peso_estimado: state.weight,
 				talla_medida: state.size,
 				sugerencias: state.notes,
-				imagen_subida_url: state._lastImagenUrl,
+				imagen_referencia_url: state._lastImagenUrl,
 				cambios_solicitados: cambios,
-				is_redesign: true
 			});
 
-			if (imagenContainer && (result?.imagenFrontal || result?.imagenUrl)) {
-				const mainImg = result.imagenFrontal || result.imagenUrl;
-				state._lastImagenUrl = mainImg;
-
-				imagenContainer.innerHTML = `
-					<div class="views-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; width:100%; margin-top:20px;">
-						<div class="view-item">
-							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.1em;">Vista Frontal</p>
-							<img src="${mainImg}" style="width:100%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.1);" />
-						</div>
-						${result.imagenTrasera ? `
-						<div class="view-item">
-							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.1em;">Vista Trasera</p>
-							<img src="${result.imagenTrasera}" style="width:100%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.1);" />
-						</div>
-						` : ''}
-						${result.imagenLateral ? `
-						<div class="view-item">
-							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.1em;">Vista Lateral</p>
-							<img src="${result.imagenLateral}" style="width:100%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.1);" />
-						</div>
-						` : ''}
-					</div>
-				`;
-				
-				// Scroll suave al resultado
+			if (imagenContainer && result?.imagenUrl) {
+				state._lastImagenUrl = result.imagenUrl;
+				imagenContainer.innerHTML = `<img src="${result.imagenUrl}" style="width:100%; max-width:900px; border-radius:12px; box-shadow:0 8px 25px rgba(0,0,0,0.08);" alt="Diseño rediseñado — Frontal · Trasera · Lateral" />`;
 				imagenContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			}
 
@@ -291,12 +267,12 @@
 		panel.style.display = visible ? 'none' : 'block';
 	}
 
-	function showSuccessScreen(state, imagenUrl, imagenTrasera, imagenLateral) {
+	function showSuccessScreen(state, imagenUrl) {
 		const main = document.querySelector('main') || document.querySelector('.flex-1');
 		if (!main) return;
 
 		state._lastImagenUrl = imagenUrl;
-		const hasImages = imagenUrl || imagenTrasera || imagenLateral;
+		const hasImages = !!imagenUrl;
 
 		main.innerHTML = `
 			<div class="max-w-4xl mx-auto px-4 py-8 text-center" style="animation: fadeInUp 0.8s ease-out;">
@@ -318,24 +294,12 @@
 
 				<div class="bg-white p-6 md:p-10 rounded-2xl shadow-lg border border-border/50 mb-8"
 				     style="animation: fadeInUp 0.8s ease-out 0.2s both;">
-					<h2 class="text-xl tracking-widest uppercase text-foreground font-medium mb-6">Tu Diseño en 3 Vistas</h2>
-					<div id="imagen-generada" style="${hasImages ? 'display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:24px; text-align:center;' : ''}">
+					<h2 class="text-xl tracking-widest uppercase text-foreground font-medium mb-6">Tu Diseño — Tres Vistas</h2>
+					<div id="imagen-generada" style="text-align:center;">
 						${imagenUrl ? `
-						<div class="view-item">
-							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.12em; font-family:sans-serif;">Vista Frontal</p>
-							<img src="${imagenUrl}" style="width:100%; border-radius:12px; border:1px solid #eee; background:#fafafa; box-shadow:0 8px 25px rgba(0,0,0,0.06);" />
-						</div>` : ''}
-						${imagenTrasera ? `
-						<div class="view-item">
-							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.12em; font-family:sans-serif;">Vista Trasera</p>
-							<img src="${imagenTrasera}" style="width:100%; border-radius:12px; border:1px solid #eee; background:#fafafa; box-shadow:0 8px 25px rgba(0,0,0,0.06);" />
-						</div>` : ''}
-						${imagenLateral ? `
-						<div class="view-item">
-							<p style="font-size:0.7rem; text-transform:uppercase; color:#888; margin-bottom:8px; letter-spacing:0.12em; font-family:sans-serif;">Vista Lateral</p>
-							<img src="${imagenLateral}" style="width:100%; border-radius:12px; border:1px solid #eee; background:#fafafa; box-shadow:0 8px 25px rgba(0,0,0,0.06);" />
-						</div>` : ''}
-						${!hasImages ? '<p class="text-muted-foreground font-sans">Tu diseño está siendo procesado. Recibirás un email con el resultado en breve.</p>' : ''}
+						<img src="${imagenUrl}" style="width:100%; max-width:900px; border-radius:12px; border:1px solid #eee; background:#fafafa; box-shadow:0 8px 25px rgba(0,0,0,0.06);" alt="Diseño generado — Frontal · Trasera · Lateral" />
+						<p style="font-size:0.7rem; color:#aaa; margin-top:8px; font-family:sans-serif; letter-spacing:0.12em; text-transform:uppercase;">Frontal · Trasera · Lateral</p>
+						` : '<p class="text-muted-foreground font-sans">Tu diseño está siendo procesado. Recibirás un email con el resultado en breve.</p>'}
 					</div>
 				</div>
 

@@ -250,7 +250,7 @@
 					imagen_subida_url: imagenSubidaUrl,
 				});
 
-				showUploadSuccess({ nombre, telefono, email, categoria, material, instructions: instrucciones }, result?.imagenFrontal || result?.imagenUrl || null, result?.imagenTrasera || null, result?.imagenLateral || null);
+				showUploadSuccess({ nombre, telefono, email, categoria, material, instructions: instrucciones }, result?.imagenUrl || null);
 
 			} catch (error) {
 				console.error('Error:', error);
@@ -262,29 +262,20 @@
 
 		let _uploadState = {};
 
-		function showUploadSuccess(data, imagenFrontal, imagenTrasera, imagenLateral) {
-			const imagenUrl = imagenFrontal;
-			// Store the full context so redesign can reference everything
+		function showUploadSuccess(data, imagenUrl) {
 			_uploadState = {
 				data,
 				imagenUrl,
-				imagenFrontal,
-				imagenTrasera,
-				imagenLateral,
-				previousPrompt: null, // will be filled after first generation via result
 			};
 			const main = document.querySelector('main');
 			if (!main) return;
 
-			const hasImages = imagenFrontal || imagenTrasera || imagenLateral;
-
-			const viewsHtml = hasImages ? `
+			const viewsHtml = imagenUrl ? `
 				<div class="bg-white p-8 rounded-2xl shadow-lg border border-border/50 mb-8">
 					<h2 class="text-xl tracking-widest uppercase text-foreground font-medium mb-6">Tu Dise&ntilde;o Generado</h2>
-					<div id="imagen-generada" class="views-grid">
-						${imagenFrontal ? `<div class="view-item"><p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif;">Vista Frontal</p><img loading="lazy" src="${imagenFrontal}" /></div>` : ''}
-						${imagenTrasera ? `<div class="view-item"><p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif;">Vista Trasera</p><img loading="lazy" src="${imagenTrasera}" /></div>` : ''}
-						${imagenLateral ? `<div class="view-item"><p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif;">Vista Lateral</p><img loading="lazy" src="${imagenLateral}" /></div>` : ''}
+					<div id="imagen-generada" style="text-align:center;">
+						<img loading="lazy" src="${imagenUrl}" style="width:100%; max-width:900px; border-radius:12px; box-shadow:0 8px 25px rgba(0,0,0,0.08);" alt="Diseño — Frontal · Trasera · Lateral" />
+						<p style="font-size:0.7rem; color:#aaa; margin-top:8px; font-family:sans-serif; letter-spacing:0.12em; text-transform:uppercase;">Frontal · Trasera · Lateral</p>
 					</div>
 				</div>` : `
 				<div class="bg-white p-8 rounded-2xl shadow-lg border border-border/50 mb-8">
@@ -418,19 +409,11 @@
 						sugerencias: _uploadState.data.instructions,
 						imagen_referencia_url: _uploadState.imagenUrl,
 						cambios_solicitados: cambios,
-						is_redesign: true
 					});
 
-					if (imagenContainer && (result?.imagenFrontal || result?.imagenUrl)) {
-						const mainImg = result.imagenFrontal || result.imagenUrl;
-						_uploadState.imagenUrl = mainImg;
-						
-						imagenContainer.innerHTML = `
-							${mainImg ? `<div class="view-item"><p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif;">Vista Frontal</p><img loading="lazy" src="${mainImg}" /></div>` : ''}
-							${result.imagenTrasera ? `<div class="view-item"><p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif;">Vista Trasera</p><img loading="lazy" src="${result.imagenTrasera}" /></div>` : ''}
-							${result.imagenLateral ? `<div class="view-item"><p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:8px;font-family:sans-serif;">Vista Lateral</p><img loading="lazy" src="${result.imagenLateral}" /></div>` : ''}
-						`;
-						
+					if (imagenContainer && result?.imagenUrl) {
+						_uploadState.imagenUrl = result.imagenUrl;
+						imagenContainer.innerHTML = `<img loading="lazy" src="${result.imagenUrl}" style="width:100%; max-width:900px; border-radius:12px; box-shadow:0 8px 25px rgba(0,0,0,0.08);" alt="Diseño rediseñado — Frontal · Trasera · Lateral" />`;
 						imagenContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 					}
 					const panel = document.getElementById('cambios-panel');

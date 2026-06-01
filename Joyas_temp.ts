@@ -2,24 +2,53 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
-// ═══════════════════════════════════════════════════════════════
-// ROMET JOYERÍA — Edge Function v60
-// FIX: send-email ahora tiene verify_jwt:false → correos funcionan
-// MEJORA: prompting de alta calidad para Gemini 2.0 flash image gen
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// ROMET JOYERÍA — Edge Function v62
+// Glosario joyería + 3 modos de prompt + emails directos Resend
+// Modelo: gemini-3.1-flash-image (confirmado funcional)
+// ═══════════════════════════════════════════════════════════
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-goog-api-key",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CATEGORIES: Record<string, string> = {
-  anillo:     "ring",
-  colgante:   "pendant necklace",
-  pendientes: "earrings (show as a pair)",
-  pulsera:    "bracelet",
-  gemelos:    "cufflinks (a pair)",
-  medallas:   "medallion pendant",
+// ═══ GLOSARIO DE JOYERÍA ═══════════════════════════════════
+const GLOSARIO: Record<string, string> = {
+  "submarino": "SUBMARINO (cufflink closure): a chain-and-bar fitting consisting of a flat T-shaped bar connected by a small chain (5 links) to the decorative face. The bar passes through the buttonhole and lies flat.",
+  "media caña": "MEDIA CAÑA (half-round edge): a rounded convex profile along the edge or border, like half a tube. Smooth, polished, domed rim — NOT flat, NOT sharp.",
+  "monograma": "MONOGRAMA (monogram): two or more letters elegantly intertwined in an ornate Victorian style, overlapping to form a single decorative emblem. The letters weave through each other.",
+  "entorchado": "ENTORCHADO (twisted wire): metal wire twisted in a rope-like spiral pattern, like a cord. Used for bands and borders.",
+  "horquilla": "HORQUILLA (rigid cufflink fitting): a rigid hinged fitting with a spring mechanism attached to the back of the cufflink face. No chain.",
+  "torzal": "TORZAL / NUDO (knot): a metal element formed into a woven knot shape, like a Turk's-head knot.",
+  "cuajo": "CUAJO: a round, richly engraved decorative element with detailed relief work, typical of traditional Spanish goldsmithing.",
+  "chapa": "CHAPA (plate): a flat thin sheet of metal forming the base or face of the piece.",
+  "cordón": "CORDÓN (cord chain): a rope-style chain, twisted to look like a cord.",
+  "filo": "FILO (edge/border): the outer rim or edge of the piece.",
+  "eslabón": "ESLABÓN (link): individual loop of a chain. '5 eslabones' = a chain of 5 links.",
+  "eslabones": "ESLABONES (links): individual loops of a chain.",
+};
+
+function detectarTerminos(...textos: (string | null | undefined)[]): string {
+  const textoCompleto = textos.filter(Boolean).join(" ").toLowerCase();
+  const definiciones: string[] = [];
+  for (const [termino, definicion] of Object.entries(GLOSARIO)) {
+    if (textoCompleto.includes(termino)) {
+      definiciones.push(definicion);
+    }
+  }
+  if (definiciones.length === 0) return "";
+  return `\n\nJEWELRY TERMINOLOGY (the client used these professional terms — follow these definitions exactly):\n${definiciones.map(d => "- " + d).join("\n")}`;
+}
+
+// ═══ MAPS ═══════════════════════════════════════════════════
+const CATEGORY_MAP: Record<string, string> = {
+  anillo:     "ring (circular band worn on finger)",
+  colgante:   "pendant (hanging from a chain, worn on chest)",
+  pendientes: "earrings (worn on earlobes, always render as a PAIR)",
+  pulsera:    "bracelet (worn around wrist)",
+  gemelos:    "cufflinks (formal men's shirt accessory, always render as a PAIR)",
+  medallas:   "medallion pendant (flat disc-shaped, religious or commemorative)",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -27,12 +56,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   pulsera: "Pulsera", gemelos: "Gemelos", medallas: "Medalla",
 };
 
-const MATERIALS: Record<string, string> = {
-  oro_amarillo: "18-karat yellow gold, warm honey tone, high-mirror polish, luxurious luster",
-  oro_blanco:   "18-karat white gold, rhodium-plated, bright silver-white, icy cool sheen",
-  oro_rosa:     "18-karat rose gold, blush pink-copper hue, satin-polished surface",
-  platino:      "950 platinum, naturally cool grey-white, heavy substantial look, matte-satin finish",
-  plata:        "sterling silver 925, bright white, mirror-polished, high shine",
+const MATERIAL_MAP: Record<string, string> = {
+  oro_amarillo: "18k yellow gold — warm golden color, mirror-polished",
+  oro_blanco:   "18k white gold rhodium plated — cool silver-white, mirror-polished",
+  oro_rosa:     "18k rose gold — warm pinkish-gold, mirror-polished",
+  platino:      "platinum 950 — naturally white, dense, prestigious",
+  plata:        "sterling silver 925 — bright silver, polished",
 };
 
 const MATERIAL_LABELS: Record<string, string> = {
@@ -40,127 +69,45 @@ const MATERIAL_LABELS: Record<string, string> = {
   oro_rosa: "Oro Rosa 18k", platino: "Platino 950", plata: "Plata 925",
 };
 
-const GEMSTONES: Record<string, string> = {
-  diamante:  "diamond, brilliant-cut, D-color, VS1 clarity, exceptional fire and sparkle",
-  rubi:      "ruby, vivid pigeon-blood red, oval cut, rich saturated color",
-  esmeralda: "emerald, deep forest green, emerald-cut, natural inclusions",
-  zafiro:    "sapphire, royal blue, cushion-cut, velvety hue",
-  perla:     "Akoya pearl, perfectly round, white with rose overtone, high luster",
-  sin_gema:  "",
+const STYLE_MAP: Record<string, string> = {
+  moderno:    "modern minimalist — smooth surfaces, clean geometric lines, no ornamentation, simple and elegant",
+  clasico:    "classic — traditional proportions, subtle engravings or fine details, timeless elegance",
+  naturaleza: "nature-inspired — organic forms, subtle leaf or floral motifs, flowing lines",
 };
 
-// Modelo con capacidad nativa de generación de imagen
-const GEMINI_MODEL = "gemini-2.0-flash-preview-image-generation";
+const PROFILE_MAP: Record<string, string> = {
+  senora:    "adult woman",
+  caballero: "adult man",
+  cadete:    "teenager",
+  nino:      "child (very small scale)",
+};
+
+// MODELO CONFIRMADO FUNCIONAL
+const GEMINI_MODEL = "gemini-3.1-flash-image";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-
-// ─── Prompt base de alta calidad ─────────────────────────────────
-function buildBasePrompt(params: {
-  cat: string;
-  mat: string;
-  gem: string;
-  style: string;
-  budget: string;
-  notes: string;
-  profile: string;
-}): string {
-  const { cat, mat, gem, style, budget, notes, profile } = params;
-
-  const gemLine    = gem    ? `Set with a ${gem}.`              : "No gemstone — clean metal design.";
-  const styleLine  = style  ? `Design style: ${style}.`         : "";
-  const profileLine= profile? `Target profile: ${profile}.`     : "";
-  const budgetLine = budget ? `Budget range: ${budget} EUR.`    : "";
-  const notesLine  = notes  ? `Special instructions: ${notes}.` : "";
-
-  return `You are a professional fine jewelry CGI artist.
-Create a PHOTOREALISTIC high-end jewelry product render of a ${cat} made in ${mat}.
-${gemLine}
-${styleLine}
-${profileLine}
-${budgetLine}
-${notesLine}
-
-TECHNICAL RENDERING REQUIREMENTS:
-- Pure white seamless studio background, no shadows except subtle drop shadow under the piece
-- Professional jewelry photography lighting: softbox from top-left, fill light from right, backlight rim
-- Macro-level detail: visible metal grain, gemstone facets refracting light, prong details, surface texture
-- Aspect ratio 1:1 square image
-- The piece must look like it could appear in a Tiffany, Cartier or Van Cleef & Arpels catalog
-- Ultra sharp focus on the entire piece
-
-STRICT RULES — NO EXCEPTIONS:
-- Do NOT add any text, letters, initials, brand marks, logos, hallmarks, serial numbers, inscriptions, engravings, or alphanumeric characters of ANY kind on the jewelry or background
-- Do NOT add watermarks, copyright notices, or any overlay text
-- The piece must be completely free of lettering or writing`;
-}
-
-async function generateView(
-  basePrompt: string,
-  viewAngle: string,
-  imagePart: any | null,
-  apiKey: string
-): Promise<string | null> {
-  const viewInstruction = ({
-    "front": "Camera angle: perfectly centered FRONT VIEW, piece facing directly toward viewer, upright position.",
-    "back":  "Camera angle: BACK VIEW, piece rotated 180 degrees, showing reverse side details.",
-    "side":  "Camera angle: SIDE PROFILE VIEW, piece rotated 90 degrees to show full profile and depth.",
-  } as Record<string, string>)[viewAngle] || "";
-
-  const fullPrompt = `${basePrompt}\n\n${viewInstruction}`;
-  const parts: any[] = [];
-  if (imagePart) parts.push(imagePart);
-  parts.push({ text: fullPrompt });
-
-  try {
-    const res = await fetch(GEMINI_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: {
-          responseModalities: ["IMAGE", "TEXT"],
-          temperature: 0.3,
-        },
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      console.error("Gemini error:", JSON.stringify(data).substring(0, 600));
-      return null;
-    }
-
-    const imgPart = data?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
-    if (imgPart) {
-      console.log(`View '${viewAngle}' generated OK.`);
-      return imgPart.inlineData.data;
-    }
-    console.warn(`View '${viewAngle}' returned no image.`);
-    return null;
-  } catch (e) {
-    console.error(`Gemini exception (${viewAngle}):`, e);
-    return null;
-  }
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
-    const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    const apiKey = Deno.env.get("GEMINI_API_KEY") || "";
+    // ── Env vars (fallbacks para ambas convenciones de nombres) ──
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || Deno.env.get("URL") || "";
+    const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_KEY") || "";
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
+    const PROPIETARIO_EMAIL = Deno.env.get("PROPIETARIO_EMAIL") || "rometjoyeria@gmail.com";
 
-    if (!SUPABASE_URL || !SUPABASE_KEY || !apiKey) {
-      throw new Error("Missing env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY");
+    if (!SUPABASE_URL || !SUPABASE_KEY || !GEMINI_API_KEY) {
+      throw new Error("Missing required environment variables (SUPABASE_URL/URL, SUPABASE_SERVICE_ROLE_KEY/SERVICE_KEY, GEMINI_API_KEY)");
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ── Auth ─────────────────────────────────────────────────────
+    // ── Auth check ──────────────────────────────────────────────
     const authHeader = req.headers.get("Authorization");
     const userToken = authHeader?.replace("Bearer ", "");
     if (!userToken) throw new Error("No session token provided");
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(userToken);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(userToken);
     if (authError || !user) throw new Error("Unauthorized");
 
     const credits = user.user_metadata?.credits ?? 0;
@@ -171,153 +118,293 @@ serve(async (req) => {
     // ── Parse body ───────────────────────────────────────────────
     const body = await req.json();
     const {
-      email, nombre, telefono,
-      categoria_producto, material, gema_principal, estilo, perfil_usuario,
-      presupuesto, sugerencias, imagen_subida_url, is_redesign, cambios_solicitados,
+      nombre, telefono, email, categoria_producto, material,
+      perfil_usuario, gema_principal, estilo, presupuesto,
+      peso_estimado, talla_medida, sugerencias,
+      imagen_subida_url,
+      imagen_referencia_url,
+      cambios_solicitados,
     } = body;
 
-    const cat = CATEGORIES[categoria_producto] || categoria_producto || "jewelry piece";
-    const mat = MATERIALS[material] || material || "18-karat gold";
-    const gem = GEMSTONES[gema_principal] || (gema_principal && gema_principal !== "sin_gema" ? gema_principal : "") || "";
+    const marca_temporal = new Date().toISOString();
 
-    // ── Load reference image ─────────────────────────────────────
-    let imagePart: any = null;
-    const refImageUrl = imagen_subida_url || body.imagen_referencia_url;
-    if (refImageUrl) {
+    // ── Build descriptions ───────────────────────────────────────
+    const categoriaDesc = CATEGORY_MAP[categoria_producto] || categoria_producto || "jewelry piece";
+    const materialDesc  = MATERIAL_MAP[material]           || material           || "precious metal";
+    const estiloDesc    = STYLE_MAP[estilo]                || estilo             || "classic";
+    const perfilDesc    = PROFILE_MAP[perfil_usuario]      || perfil_usuario      || "adult";
+    const tieneGema     = gema_principal && gema_principal !== "sin_gema";
+    const glosarioInyectado = detectarTerminos(sugerencias, cambios_solicitados);
+
+    const especificaciones = `JEWELRY SPECIFICATIONS (must always be respected):
+- Type: ${categoriaDesc}
+- Metal: ${materialDesc}
+- Gemstone: ${tieneGema ? gema_principal + " — realistic facets and light refraction" : "no gemstone — clean metal only"}
+- Style: ${estiloDesc}
+- Target wearer: ${perfilDesc}
+${sugerencias ? "- Design notes: " + sugerencias : ""}`;
+
+    const reglasEstilo = `CRITICAL STYLE RULES — follow strictly:
+- The piece MUST look like a real, commercially available jewelry store product
+- SIMPLE and CLEAN — no excessive decoration, no fantasy elements
+- Realistic, wearable proportions
+- DO NOT add faces, animals, crowns, wings, dragons, snakes, skulls or fantasy motifs unless explicitly requested
+- DO NOT invent decorative elements that were not asked for
+- Understated and elegant, never baroque or churrigueresque`;
+
+    const reglasVistas = `THREE-VIEW COMPOSITE IMAGE — CRITICALLY IMPORTANT:
+- Generate ONE wide horizontal image divided into THREE equal vertical panels side by side
+- LEFT panel: FRONT view (piece facing viewer directly, upright)
+- CENTER panel: BACK view (piece rotated 180°, showing reverse side)
+- RIGHT panel: SIDE/PROFILE view (piece rotated 90°, showing depth and thickness)
+- ⚠️ ALL THREE PANELS MUST SHOW THE EXACT SAME SINGLE PIECE — only the camera angle differs
+- The piece MUST be IDENTICAL in all three panels: same shape, same size, same gemstones, same proportions, same decorative details
+- This is ONE object photographed from three angles — NOT three different objects
+- Do NOT add, remove or change any element between panels
+- Do NOT mix in other jewelry pieces or accessories
+- Small labels at the bottom of each panel: FRONT | BACK | SIDE`;
+
+    const reglasRender = `RENDERING QUALITY:
+- Pure white seamless studio background
+- Professional jewelry photography lighting (softbox top-left + fill right + rim backlight)
+- Mirror-polished metal with realistic reflections and highlights
+- ${tieneGema ? "Gemstone with realistic transparency and light caustics" : "Clean polished metal surface"}
+- Ultra-sharp macro photography quality
+- No watermarks, no text overlays (EXCEPT the three panel labels FRONT/BACK/SIDE at the bottom)`;
+
+    const esRetoque     = !!imagen_referencia_url;
+    const esImagenSubida = !!imagen_subida_url;
+    const imagenParaGemini = imagen_referencia_url || imagen_subida_url || null;
+
+    // ── Build prompt (3 modos) ───────────────────────────────────
+    let prompt: string;
+
+    if (esRetoque) {
+      // MODO 2/4: Retoque de imagen existente
+      prompt = `You are a professional fine jewelry designer performing a PRECISE RETOUCH on an existing design.
+
+The attached image shows the CURRENT design. Modify ONLY what is specified in the requested changes below, keeping EVERYTHING ELSE exactly identical. This is a retouch — NOT a redesign. Do not reinvent the piece, do not change the letter, shape, or any element that the requested change does not explicitly mention.
+
+${especificaciones}
+
+⚠️ REQUESTED CHANGES — apply ONLY these specific modifications, keep all other features identical to the attached image:
+"${cambios_solicitados || sugerencias}"
+${glosarioInyectado}
+
+${reglasEstilo}
+
+${reglasVistas}
+
+${reglasRender}
+
+CRITICAL: The result must be immediately recognizable as the SAME piece from the attached image, with ONLY the requested change applied. Preserve original form, proportions, letters, motifs and all unchanged details.`;
+
+    } else if (esImagenSubida) {
+      // MODO 3: El cliente sube una foto de referencia
+      prompt = `You are a professional fine jewelry designer. The attached image is a reference uploaded by the client (a design they like, a sketch, or a photo of a figure/object they want reproduced as jewelry).
+
+Study the reference carefully and reproduce its key elements faithfully as a professional jewelry piece. If the reference shows a specific face, religious figure, letter, monogram or distinctive motif — reproduce THAT specific subject faithfully, do not replace it with a generic one.
+
+${especificaciones}
+${glosarioInyectado}
+
+${reglasEstilo}
+
+${reglasVistas}
+
+${reglasRender}`;
+
+    } else {
+      // MODO 1: Diseño desde cero
+      prompt = `You are a professional fine jewelry designer. Generate a photorealistic jewelry piece based on the specifications below.
+
+${especificaciones}
+${glosarioInyectado}
+
+${reglasEstilo}
+
+${reglasVistas}
+
+${reglasRender}`;
+    }
+
+    // ── Load reference image if provided ────────────────────────
+    let imagenBase64: string | null = null;
+    let imagenMimeType = "image/jpeg";
+
+    if (imagenParaGemini) {
       try {
-        const imgRes = await fetch(refImageUrl);
+        const imgRes = await fetch(imagenParaGemini);
         if (imgRes.ok) {
           const buf = await imgRes.arrayBuffer();
-          const contentType = imgRes.headers.get("content-type") || "image/jpeg";
-          imagePart = { inlineData: { mimeType: contentType, data: encode(new Uint8Array(buf)) } };
-          console.log("Reference image loaded, size:", buf.byteLength);
+          imagenBase64 = encode(new Uint8Array(buf));
+          imagenMimeType = imgRes.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+          console.log("Reference image loaded, bytes:", buf.byteLength);
         }
-      } catch (e) { console.error("Reference image load fail:", e); }
+      } catch (e) {
+        console.warn("Could not load reference image:", e);
+      }
     }
 
-    // ── Build prompt ─────────────────────────────────────────────
-    let basePrompt: string;
-    if (is_redesign && (imagePart || sugerencias)) {
-      const changeInstructions = cambios_solicitados || sugerencias || "improve the design";
-      basePrompt = `You are a professional fine jewelry CGI artist.
-${imagePart ? "Using the attached reference image as the base design," : ""} Apply these modifications to the ${cat}: ${changeInstructions}.
-Keep the same ${mat} material${gem ? ` and ${gem}` : ""}.
-Maintain photorealistic render quality, pure white studio background, professional jewelry photography lighting.
-STRICT RULES: No text, letters, marks, logos, hallmarks, or inscriptions of any kind on the jewelry or background.`;
-    } else {
-      basePrompt = buildBasePrompt({
-        cat, mat, gem,
-        style: estilo || "",
-        budget: presupuesto || "",
-        notes: sugerencias || "",
-        profile: perfil_usuario || "",
-      });
+    // ── Call Gemini ──────────────────────────────────────────────
+    const parts: any[] = [];
+    if (imagenBase64) {
+      parts.push({ inlineData: { mimeType: imagenMimeType, data: imagenBase64 } });
+    }
+    parts.push({ text: prompt });
+
+    const modo = esRetoque ? "retoque" : esImagenSubida ? "imagen_subida" : "desde_cero";
+    console.log(`v62 — mode: ${modo}, model: ${GEMINI_MODEL}, hasRefImage: ${!!imagenBase64}`);
+
+    const geminiRes = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
+      }),
+    });
+
+    const geminiData = await geminiRes.json();
+    if (!geminiRes.ok) {
+      console.error("Gemini error:", JSON.stringify(geminiData).substring(0, 600));
+      throw new Error(`Gemini API error: ${geminiData?.error?.message || geminiRes.status}`);
     }
 
-    console.log("Generating 3 views. Model:", GEMINI_MODEL);
+    const imagePart = geminiData.candidates?.[0]?.content?.parts?.find(
+      (p: any) => p.inlineData?.mimeType?.startsWith("image/")
+    );
 
-    // ── Generate 3 views in parallel ─────────────────────────────
-    const [frontB64, backB64, sideB64] = await Promise.all([
-      generateView(basePrompt, "front", imagePart, apiKey),
-      generateView(basePrompt, "back",  imagePart, apiKey),
-      generateView(basePrompt, "side",  imagePart, apiKey),
-    ]);
-
-    if (!frontB64) {
-      throw new Error("Gemini failed to generate the front view. Check GEMINI_API_KEY and model availability.");
+    if (!imagePart) {
+      console.error("Gemini returned no image. Parts:", JSON.stringify(
+        geminiData.candidates?.[0]?.content?.parts?.map((p: any) => Object.keys(p))
+      ));
+      throw new Error("Gemini did not return an image. Check API key and model availability.");
     }
 
-    // ── Save to Supabase Storage ─────────────────────────────────
-    async function saveImage(b64: string | null, label: string): Promise<string | null> {
-      if (!b64) return null;
-      try {
-        const fname = `diseno_${Date.now()}_${label}.png`;
-        const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-        const { error: uploadError } = await supabaseAdmin.storage
-          .from("disenos")
-          .upload(fname, bytes, { contentType: "image/png", upsert: false });
-        if (uploadError) { console.error(`Storage error (${label}):`, uploadError.message); return null; }
-        return supabaseAdmin.storage.from("disenos").getPublicUrl(fname).data.publicUrl;
-      } catch(e) { console.error(`Save exception (${label}):`, e); return null; }
+    // ── Save image to Supabase Storage ───────────────────────────
+    const fileName = `diseno_${Date.now()}_${modo}.png`;
+    const imageBytes = Uint8Array.from(atob(imagePart.inlineData.data), c => c.charCodeAt(0));
+    const { error: storageError } = await supabase.storage
+      .from("disenos")
+      .upload(fileName, imageBytes, { contentType: "image/png", upsert: false });
+
+    if (storageError) {
+      console.error("Storage error:", storageError.message);
+      throw new Error(`Storage upload failed: ${storageError.message}`);
     }
 
-    const [imagenFrontal, imagenTrasera, imagenLateral] = await Promise.all([
-      saveImage(frontB64, "front"),
-      saveImage(backB64,  "back"),
-      saveImage(sideB64,  "side"),
-    ]);
+    const { data: urlData } = supabase.storage.from("disenos").getPublicUrl(fileName);
+    const imagenUrl = urlData.publicUrl;
+    console.log("Image saved:", imagenUrl);
 
-    // ── Insert DB ────────────────────────────────────────────────
+    // ── Insert into DB ───────────────────────────────────────────
     const insertPayload: any = {
-      imagen_generada_url: imagenFrontal,
-      prompt_usado: basePrompt,
-      marca_temporal: new Date().toISOString(),
+      imagen_generada_url: imagenUrl,
+      prompt_usado: prompt,
+      marca_temporal,
     };
-    ["nombre","telefono","email","categoria_producto","material","perfil_usuario","gema_principal","estilo","sugerencias","talla_medida"]
-      .forEach(f => { if (body[f] !== undefined) insertPayload[f] = body[f]; });
+    const dbFields = ["nombre","telefono","email","categoria_producto","material",
+      "perfil_usuario","gema_principal","estilo","sugerencias","talla_medida"];
+    dbFields.forEach(f => { if (body[f] !== undefined) insertPayload[f] = body[f]; });
     if (body.presupuesto !== undefined) insertPayload.presupuesto = body.presupuesto ? String(body.presupuesto) : null;
     if (body.peso_estimado !== undefined) insertPayload.peso_estimado = body.peso_estimado ? String(body.peso_estimado) : null;
-    if (refImageUrl) insertPayload.imagen_subida_url = refImageUrl;
+    if (imagenParaGemini) insertPayload.imagen_subida_url = imagenParaGemini;
 
-    const { data: insertedData, error: dbError } = await supabaseAdmin
+    const { data: insertedData, error: dbError } = await supabase
       .from("solicitudes_disenos_romet")
       .insert(insertPayload)
       .select()
       .single();
 
     if (dbError) {
-      console.error("DB Insert Error:", JSON.stringify(dbError));
+      console.error("DB Insert error:", JSON.stringify(dbError));
     } else {
       console.log("DB Insert OK, ID:", insertedData?.id);
     }
 
-    // ── Send emails ──────────────────────────────────────────────
-    // send-email has verify_jwt:false so service_role key works as Bearer
-    if (insertedData && email && !is_redesign) {
+    // ── Send emails via Resend (solo en generaciones nuevas, no retoques) ──
+    if (email && RESEND_API_KEY && !esRetoque) {
+      const emailImageHtml = `
+        <div style="text-align:center; margin:20px 0;">
+          <img src="${imagenUrl}" style="max-width:100%; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.1);" alt="Diseño generado" />
+          <p style="font-size:11px; color:#999; margin-top:6px; font-family:sans-serif;">Vista compuesta: Frontal · Trasera · Lateral</p>
+        </div>`;
+
+      const resendHeaders = {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      };
+
+      // Email al propietario
       try {
-        const emailPayload = {
-          type: refImageUrl ? "Sube tu Diseño" : "Diseño Guiado",
-          to: email,
-          customerName: nombre || "Cliente",
-          customerPhone: telefono || "",
-          orderId: insertedData.id,
-          categoria: CATEGORY_LABELS[categoria_producto] || categoria_producto || "",
-          material: MATERIAL_LABELS[material] || material || "",
-          sugerencias: sugerencias || "",
-          imagenSubidaUrl: refImageUrl || null,
-          imagenFrontal: imagenFrontal || null,
-          imagenTrasera: imagenTrasera || null,
-          imagenLateral: imagenLateral || null,
-        };
-        console.log("Calling send-email...");
-        const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+        const ownerRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${SUPABASE_KEY}`,
-          },
-          body: JSON.stringify(emailPayload),
+          headers: resendHeaders,
+          body: JSON.stringify({
+            from: "Romet Joyería <no-reply@rometjoyeria.com>",
+            to: [PROPIETARIO_EMAIL],
+            subject: `⚡ Nueva solicitud: ${CATEGORY_LABELS[categoria_producto] || categoria_producto || "Joya"} — ${nombre || "Cliente"}`,
+            html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;">
+              <h2 style="color:#b8860b;">Nueva solicitud de diseño</h2>
+              <table style="width:100%;border-collapse:collapse;">
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Nombre</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${nombre || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Teléfono</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${telefono || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Email</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${email || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Categoría</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${CATEGORY_LABELS[categoria_producto] || categoria_producto || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Material</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${MATERIAL_LABELS[material] || material || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Gema</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${gema_principal || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Estilo</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${estilo || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Perfil</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${perfil_usuario || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Presupuesto</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${presupuesto ? presupuesto + "€" : ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Talla</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${talla_medida || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Sugerencias</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${sugerencias || ""}</td></tr>
+                <tr><td style="padding:8px;"><strong>Fecha</strong></td><td style="padding:8px;">${marca_temporal}</td></tr>
+              </table>
+              ${emailImageHtml}
+            </div>`,
+          }),
         });
-        const emailBody = await emailRes.text();
-        console.log("send-email result:", emailRes.status, emailBody.substring(0, 300));
-      } catch (e) {
-        console.error("Email exception:", e);
-      }
+        console.log("Owner email status:", ownerRes.status);
+      } catch(e) { console.error("Owner email error:", e); }
+
+      // Email al cliente
+      try {
+        const clientRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: resendHeaders,
+          body: JSON.stringify({
+            from: "Romet Joyería <no-reply@rometjoyeria.com>",
+            to: [email],
+            subject: "Tu diseño de joya personalizado — Romet Joyería",
+            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+              <h2 style="color:#b8860b;">Hola ${nombre || ""}, aquí tienes tu diseño</h2>
+              <p>Hemos generado tu joya personalizada. Nos pondremos en contacto contigo muy pronto para hacerla realidad.</p>
+              ${emailImageHtml}
+              <table style="width:100%;border-collapse:collapse;margin-top:24px;">
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Categoría</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${CATEGORY_LABELS[categoria_producto] || categoria_producto || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Material</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${MATERIAL_LABELS[material] || material || ""}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Gema</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${gema_principal || ""}</td></tr>
+                <tr><td style="padding:8px;"><strong>Sugerencias</strong></td><td style="padding:8px;">${sugerencias || ""}</td></tr>
+              </table>
+              <p style="margin-top:24px;color:#888;">Con cariño, el equipo de Romet Joyería</p>
+            </div>`,
+          }),
+        });
+        console.log("Client email status:", clientRes.status);
+      } catch(e) { console.error("Client email error:", e); }
     }
 
-    return new Response(JSON.stringify({
-      success: true,
-      imagenUrl: imagenFrontal,
-      imagenFrontal,
-      imagenTrasera,
-      imagenLateral,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(
+      JSON.stringify({ success: true, imagenUrl }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
-  } catch (err: any) {
-    console.error("v60 ERROR:", err.message);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: corsHeaders,
-    });
+  } catch (error: any) {
+    console.error("v62 ERROR:", error.message);
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });
