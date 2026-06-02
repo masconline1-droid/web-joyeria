@@ -155,20 +155,61 @@
 	</div>
 
 	<script>
-		function selectOption(el, key, value) {
-			document.querySelectorAll('.cursor-pointer').forEach(e => {
-				e.style.opacity = '0.5';
-				e.classList.remove('border-primary', 'bg-primary/5', 'shadow-md', 'scale-105');
-				e.classList.add('border-transparent');
-			});
-			el.style.opacity = '1';
-			el.classList.remove('border-transparent');
-			el.classList.add('border-primary', 'bg-primary/5', 'shadow-md', 'scale-105');
+		let selectedGemstones = [];
+
+		document.addEventListener('DOMContentLoaded', () => {
 			const state = window.RometDesigner?.loadState() || {};
-			state[key] = value;
+			const gemstoneVal = state.gemstone;
+			if (gemstoneVal) {
+				selectedGemstones = gemstoneVal.split(',').map(s => s.trim()).filter(Boolean);
+			}
+			if (selectedGemstones.length > 0) {
+				document.getElementById('nextBtn').disabled = false;
+			}
+			updateUI();
+		});
+
+		function selectOption(el, key, value) {
+			if (value === 'sin_gema') {
+				selectedGemstones = ['sin_gema'];
+			} else {
+				selectedGemstones = selectedGemstones.filter(g => g !== 'sin_gema');
+				if (selectedGemstones.includes(value)) {
+					selectedGemstones = selectedGemstones.filter(g => g !== value);
+				} else {
+					selectedGemstones.push(value);
+				}
+			}
+			
+			const state = window.RometDesigner?.loadState() || {};
+			if (selectedGemstones.length > 0) {
+				state[key] = selectedGemstones.join(', ');
+				document.getElementById('nextBtn').disabled = false;
+			} else {
+				state[key] = null;
+				document.getElementById('nextBtn').disabled = true;
+			}
 			window.RometDesigner?.saveState(state);
-			document.getElementById('nextBtn').disabled = false;
-			setTimeout(() => goToNext('./designer-paso5.html'), 300);
+			updateUI();
+		}
+
+		function updateUI() {
+			const cards = document.querySelectorAll('.cursor-pointer');
+			cards.forEach(card => {
+				const onclickStr = card.getAttribute('onclick') || '';
+				const match = onclickStr.match(/'gemstone',\s*'([^']+)'/);
+				const val = match ? match[1] : '';
+				
+				if (selectedGemstones.includes(val)) {
+					card.style.opacity = '1';
+					card.classList.remove('border-transparent');
+					card.classList.add('border-primary', 'bg-primary/5', 'shadow-md', 'scale-105');
+				} else {
+					card.style.opacity = selectedGemstones.length > 0 ? '0.5' : '1';
+					card.classList.remove('border-primary', 'bg-primary/5', 'shadow-md', 'scale-105');
+					card.classList.add('border-transparent');
+				}
+			});
 		}
 
 		function goToNext(url) {
