@@ -52,12 +52,12 @@ const CATEGORY_MAP: Record<string, string> = {
 };
 
 const BODY_PART_MAP: Record<string, string> = {
-  anillo:     "close-up shot of the ring worn on a person's finger, showing realistic skin texture and scale, with the ring as the sharp focal point",
-  colgante:   "medium close-up shot of the pendant worn around a person's neck/chest, hanging naturally, with the pendant as the sharp focal point",
-  pendientes: "close-up macro shot focusing directly on a person's earlobe/ear showing the earring worn naturally, with the earring as the sharp focal point (do NOT show the entire face, focus closely on the ear and earring)",
-  pulsera:    "close-up shot of the bracelet worn around a person's wrist, showing realistic wrist placement, with the bracelet as the sharp focal point",
-  gemelos:    "close-up macro shot of the cufflink worn on a formal shirt cuff, properly aligned, with the cufflink as the sharp focal point",
-  medallas:   "medium close-up shot of the medallion pendant worn around a person's neck/chest, hanging naturally, with the medallion as the sharp focal point",
+  anillo:     "naturally showing the ring worn on a person's finger, elegant hand placement (e.g. resting on clothing), showing realistic scale and fit, not too close",
+  colgante:   "elegant portrait shot showing the pendant worn around a person's neck/chest, hanging naturally, showing realistic scale and fit",
+  pendientes: "elegant side-profile portrait shot of a person's head and neck, showing the earring worn naturally on the ear, showing realistic scale, drape, and fit (not a super close-up macro of the ear, but a beautiful side-profile portrait focusing on the ear and neck area)",
+  pulsera:    "naturally showing the bracelet worn around a person's wrist, showing realistic scale and fit",
+  gemelos:    "showing the cufflink worn on a formal shirt cuff, showing realistic scale and fit",
+  medallas:   "elegant portrait shot showing the medallion pendant worn around a person's neck/chest, hanging naturally, showing realistic scale and fit",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -183,7 +183,7 @@ ${sugerencias ? "- Design notes: " + sugerencias : ""}`;
 - In the first three panels (FRONT, BACK, SIDE), the entire jewelry piece MUST be 100% FULLY VISIBLE and perfectly centered.
 - ⚠️ NEVER crop, cut off, chop, or truncate any edge or part of the jewelry piece in the first three panels.
 - There MUST be a generous, comfortable clear empty white margin (at least 20% to 25% padding/negative space) all around the jewelry piece inside the first three panels.
-- For the fourth panel (ON-MODEL), the jewelry piece must be realistically placed on the body part and shown in proper human scale. It must use a close-up/macro composition focusing directly on the jewelry itself and the specific body part (e.g. ear close-up for earrings, finger close-up for rings), rather than showing wide-angle shots or the model's entire face.
+- For the fourth panel (ON-MODEL), the jewelry piece must be realistically placed on the body part and shown in proper human scale. It must use an elegant, natural portrait or close-up composition showing how the jewelry fits and looks on a person (e.g. a beautiful side-profile portrait focusing on the ear and neck area for earrings, or a hand naturally resting for rings). Avoid extremely close macro crops (like just showing an earlobe or a single finger) and avoid very wide-angle shots where the jewelry is too far away. The goal is to show the fit, scale, and context of the jewelry on a person elegantly, without repeating the flat/technical angles from the first three panels.
 - No part, edge, prong, chain link, or detail of the jewelry should ever touch or go beyond the boundaries of any panel.`;
 
     const reglasRender = `RENDERING QUALITY:
