@@ -172,12 +172,11 @@ ${sugerencias ? "- Design notes: " + sugerencias : ""}`;
 - 1st panel (left): FRONT view (piece alone, facing viewer directly, upright, pure white background)
 - 2nd panel (center-left): BACK view (piece alone, rotated 180°, showing reverse side, pure white background)
 - 3rd panel (center-right): SIDE/PROFILE view (piece alone, rotated 90°, showing depth and thickness, pure white background)
-- 4th panel (right): ON-MODEL view (showing the exact same piece being worn by a person, ${bodyPartDesc})
+- 4th panel (right): ON-MODEL view (showing the exact same piece being worn by a generic professional model, ${bodyPartDesc})
 - ⚠️ ALL FOUR PANELS MUST SHOW THE EXACT SAME SINGLE PIECE — only the view and context differ
 - The piece MUST be IDENTICAL in all panels: same shape, same size, same gemstones, same proportions, same decorative details
 - This is ONE object photographed from different angles and in context — NOT different objects
 - Do NOT add, remove or change any element of the jewelry between panels
-- If the uploaded reference image shows a person's body part (hand, ear, wrist, neck, etc.), the 4th panel (ON MODEL) should place the generated jewelry piece onto that exact body part from the uploaded photo, using the person's photo as the realistic model context.
 - Small labels at the bottom of each panel: FRONT | BACK | SIDE | ON MODEL`;
 
     const reglasEncuadre = `FRAMING & COMPOSITION (STRICTLY REQUIRED TO PREVENT CROP/CUTOFF):
@@ -189,7 +188,7 @@ ${sugerencias ? "- Design notes: " + sugerencias : ""}`;
 
     const reglasRender = `RENDERING QUALITY:
 - Panels 1, 2, and 3: Pure white seamless studio background with professional softbox lighting
-- Panel 4: If the client uploaded a photo of a person's body part, use that photo as the background/context and place the jewelry realistically on it. Otherwise, use a natural realistic model portrait background (soft-focus, warm natural lighting, realistic skin textures).
+- Panel 4: Natural realistic model portrait background (soft-focus, warm natural lighting, realistic skin textures)
 - Mirror-polished metal with realistic reflections and highlights
 - ${tieneGema ? "Gemstone with realistic transparency and light caustics" : "Clean polished metal surface"}
 - Ultra-sharp macro photography quality
@@ -229,7 +228,7 @@ CRITICAL: The result must be immediately recognizable as the SAME piece from the
       prompt = `You are a professional fine jewelry designer. The attached image is a reference uploaded by the client (a design, a sketch, or a portrait photo of a person/family member).
 
 Study the reference carefully and reproduce its key elements faithfully as a professional jewelry piece:
-- PORTRAIT ENGRAVINGS: If the reference shows a person's face or portrait (e.g., a family member, child, or parent), the jewelry piece (especially if it is a medallion pendant, medal, coin, or cameo) MUST feature a masterfully sculpted, high-fidelity 3D bas-relief engraving of that exact person's face on the polished metal. Capturing their exact likeness, facial features, hair structure, and expression with extreme clarity and sharp details is CRITICAL. Avoid generic faces; the relief carving must look identical to the person in the photo.
+- EXACT 1-TO-1 PORTRAIT ENGRAVINGS: If the reference shows a person's face or portrait (e.g., a family member, child, or parent), the jewelry piece (especially if it is a medallion pendant, medal, coin, or cameo) MUST feature a masterfully sculpted, high-fidelity 3D bas-relief engraving of that exact person's face on the polished metal surface. Capturing their exact likeness, eye shape, nose shape, mouth structure, jawline, hair details, and facial expression is CRITICAL. The metallic bas-relief must look identical to the person in the photo, as if their exact face was directly printed or sculpted onto the gold/silver surface with perfect fidelity. Do NOT generalize, simplify, or stylize the face. It must be an exact, recognizable portrait of the specific individual shown in the reference photo.
 - SKETCHES & DESIGNS: If the reference shows a sketch or drawing, reproduce its shape, proportions, and details faithfully as a real, wearable piece of jewelry.
 
 ${especificaciones}
