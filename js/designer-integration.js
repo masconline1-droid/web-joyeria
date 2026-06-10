@@ -309,7 +309,8 @@
 						<button type="button" onclick="document.getElementById('cambios-texto').value = ''; this.style.display='none';" class="text-xs text-primary/70 hover:text-primary font-sans underline cursor-pointer">🗑️ Limpiar plantilla</button>
 					</div>
 					<textarea id="cambios-texto"
-					          class="w-full border border-border p-4 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-all duration-300 text-base font-serif min-h-[220px] resize-y rounded-md mb-3">[Edita esta plantilla con tus cambios para que la IA los realice con precisión]
+					          class="w-full border border-border p-4 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-all duration-300 text-base font-serif resize-y rounded-md mb-3"
+					          style="min-height: 250px; height: 250px;">[Edita esta plantilla con tus cambios para que la IA los realice con precisión]
 - QUÉ MANTENER IGUAL: (Ej. El rostro grabado en el centro)
 - QUÉ CAMBIAR O AÑADIR: (Ej. Añadir un borde decorativo simple / Hacer el borde más grueso)
 - DETALLES DEL METAL: (Ej. Cambiar el color del oro a plata)
