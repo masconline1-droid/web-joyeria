@@ -406,4 +406,54 @@ window.showOutOfCreditsModal = function() {
 	document.body.appendChild(overlay);
 };
 
+// Redirigir al usuario a Stripe Checkout de forma global
+window.redirectToStripeCheckout = async function(plan, element, lang = 'es') {
+	let originalContent = '';
+	let isButton = false;
+	
+	if (element) {
+		isButton = element.tagName === 'BUTTON';
+		originalContent = element.innerHTML;
+		element.style.pointerEvents = 'none';
+		if (isButton) {
+			element.disabled = true;
+			element.innerHTML = '<span class="spinner" style="display:inline-block; width:16px; height:16px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></span>';
+		} else {
+			element.style.opacity = '0.5';
+		}
+	}
+
+	try {
+		const result = await callEdgeFunction('create-checkout', {
+			plan: plan,
+			lang: lang
+		});
+
+		if (result.url) {
+			window.location.href = result.url;
+		} else {
+			throw new Error(result.error || (lang === 'en' ? 'Could not create payment session' : 'No se pudo crear la sesión de pago'));
+		}
+	} catch(e) {
+		console.error('Error al crear sesión de Stripe:', e);
+		const msg = lang === 'en' 
+			? 'Error connecting to payment gateway: ' + e.message 
+			: 'Error al conectar con la pasarela de pago: ' + e.message;
+		if (typeof showNotification === 'function') {
+			showNotification(msg, 'error');
+		} else {
+			alert(msg);
+		}
+		if (element) {
+			element.style.pointerEvents = 'auto';
+			if (isButton) {
+				element.disabled = false;
+			} else {
+				element.style.opacity = '1';
+			}
+			element.innerHTML = originalContent;
+		}
+	}
+};
+
 window.addEventListener('load', () => initWhenReady(null));

@@ -355,7 +355,8 @@
 							WOULD YOU LIKE TO MAKE ANY CHANGES?
 						</button>
 
-						<a href="#"
+						<a href="javascript:void(0)"
+						   onclick="window.redirectToStripeCheckout('custom_design', this, 'en')"
 						   style="display: block; text-decoration: none;
 						          width: 185px; height: 185px;
 						          cursor: pointer; overflow: hidden;">
