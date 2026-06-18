@@ -526,26 +526,26 @@
 						<h2 class="card-title">Token Gratis</h2>
 						<div class="card-credits">5 Diseños</div>
 						<div class="card-price">0 €</div>
-						<p class="card-description">Prueba la magia de la Inteligencia Artificial de Romet Joyería. Genera tus primeros bocetos y experimenta con formas, metales y gemas sin coste alguno.</p>
+						<p class="card-description">Prueba la magia de la Inteligencia Artificial de Romet Joyería. Genera tus primeros bocetos y experimenta con diferentes tipos de joyas y estilos sin coste alguno.</p>
 						<button id="btn-free" class="card-btn" onclick="claimFreeToken()">Obtener</button>
 					</div>
 
 					<!-- 10 Designs -->
-					<div class="pricing-card featured">
+					<div class="pricing-card">
 						<h2 class="card-title">10 Diseños</h2>
 						<div class="card-credits">10 Generaciones IA</div>
 						<div class="card-price">4,99 €</div>
-						<p class="card-description">La opción ideal para definir tu pieza perfecta. Obtén 10 generaciones de alta resolución para explorar variaciones de metal, acabados y engastes en detalle. <br><strong>(Límite: 1 por usuario)</strong></p>
+						<p class="card-description">La opción ideal para definir tu pieza perfecta. Obtén 10 generaciones de alta resolución para explorar variaciones de diseño, acabados y estilos de joyas en detalle.</p>
 						<button id="btn-499" class="card-btn" onclick="openPaymentModal(10, '4,99')">Comprar</button>
 					</div>
 
-					<!-- 150 Designs -->
-					<div class="pricing-card">
-						<h2 class="card-title">150 Diseños</h2>
-						<div class="card-credits">150 Generaciones IA</div>
+					<!-- 250 Designs -->
+					<div class="pricing-card featured">
+						<h2 class="card-title">250 Diseños</h2>
+						<div class="card-credits">250 Generaciones IA</div>
 						<div class="card-price">99,00 €</div>
-						<p class="card-description">Diseñado para creadores apasionados y colecciones completas. Disfruta de 150 generaciones para diseñar sin límites y refinar cada aspecto de tus joyas.</p>
-						<button id="btn-99" class="card-btn" onclick="openPaymentModal(150, '99,00')">Comprar</button>
+						<p class="card-description">Diseñado para creadores apasionados y colecciones completas. Disfruta de 250 generaciones para diseñar sin límites y refinar cada aspecto de tus joyas.</p>
+						<button id="btn-99" class="card-btn" onclick="openPaymentModal(250, '99,00')">Comprar</button>
 					</div>
 				</div>
 
@@ -668,18 +668,8 @@
 			if (!currentUser) return;
 			
 			const metadata = currentUser.user_metadata || {};
-			
-			// 1. Limitar el paquete de 4.99 € a una sola compra
-			if (metadata.purchased_499 === true) {
-				const btn499 = document.getElementById('btn-499');
-				if (btn499) {
-					btn499.disabled = true;
-					btn499.textContent = "Ya adquirido";
-					btn499.title = "Esta oferta exclusiva de bienvenida está limitada a 1 compra por usuario.";
-				}
-			}
 
-			// 2. Opcional: Limitar el Token Gratis a una sola recarga
+			// Opcional: Limitar el Token Gratis a una sola recarga
 			if (metadata.claimed_free === true) {
 				const btnFree = document.getElementById('btn-free');
 				if (btnFree) {
@@ -777,11 +767,6 @@
 					credits: newCredits
 				};
 
-				// Si compra el paquete de 4.99 €, bloquear compras futuras del mismo
-				if (creditsToAdd === 10 && price === '4,99') {
-					updatePayload.purchased_499 = true;
-				}
-
 				// Simular retardo de red para la pasarela de pago (1.5 segundos)
 				await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -840,6 +825,23 @@
 				});
 
 				if (error) throw error;
+
+				// Enviar correo de notificación al propietario y de confirmación al cliente utilizando la Edge Function send-email
+				try {
+					const emailPayload = {
+						type: 'Contacto Empresas',
+						to: email, // Cliente
+						customerName: nombre,
+						customerPhone: telefono,
+						orderId: Math.floor(100000 + Math.random() * 900000),
+						categoria: empresa, // Mapeado como "Tipo de joya" en la plantilla de correo
+						material: localidad, // Mapeado como "Material"
+						sugerencias: mensaje // Mapeado como "Instrucciones" / "Notas"
+					};
+					await callEdgeFunction('send-email', emailPayload);
+				} catch(mailErr) {
+					console.warn("Error enviando la notificación de email:", mailErr);
+				}
 
 				closeModal('enterprise-modal');
 				showNotification("¡Solicitud enviada! Nos pondremos en contacto contigo a la brevedad.", "success");

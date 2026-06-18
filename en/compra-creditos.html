@@ -526,26 +526,26 @@
 						<h2 class="card-title">Free Token</h2>
 						<div class="card-credits">5 Designs</div>
 						<div class="card-price">0 €</div>
-						<p class="card-description">Experience the magic of Romet Jewelry AI. Generate your first design sketches and experiment with metals, shapes, and gems completely free of charge.</p>
+						<p class="card-description">Experience the magic of Romet Jewelry AI. Generate your first design sketches and experiment with different jewelry types and styles completely free of charge.</p>
 						<button id="btn-free" class="card-btn" onclick="claimFreeToken()">Get</button>
 					</div>
 
 					<!-- 10 Designs -->
-					<div class="pricing-card featured">
+					<div class="pricing-card">
 						<h2 class="card-title">10 Designs</h2>
 						<div class="card-credits">10 AI Generations</div>
 						<div class="card-price">4,99 €</div>
-						<p class="card-description">The ideal option to define your perfect piece. Get 10 high-resolution generations to explore metal finishes, settings, and detail variations. <br><strong>(Limit: 1 per user)</strong></p>
+						<p class="card-description">The ideal option to define your perfect piece. Get 10 high-resolution generations to explore jewelry design variations and styles in detail.</p>
 						<button id="btn-499" class="card-btn" onclick="openPaymentModal(10, '4,99')">Buy</button>
 					</div>
 
-					<!-- 150 Designs -->
-					<div class="pricing-card">
-						<h2 class="card-title">150 Designs</h2>
-						<div class="card-credits">150 AI Generations</div>
+					<!-- 250 Designs -->
+					<div class="pricing-card featured">
+						<h2 class="card-title">250 Designs</h2>
+						<div class="card-credits">250 AI Generations</div>
 						<div class="card-price">99,00 €</div>
-						<p class="card-description">Designed for passionate creators and complete collections. Enjoy 150 generations to design without limits and refine every detail of your luxury pieces.</p>
-						<button id="btn-99" class="card-btn" onclick="openPaymentModal(150, '99,00')">Buy</button>
+						<p class="card-description">Designed for passionate creators and complete collections. Enjoy 250 generations to design without limits and refine every detail of your luxury pieces.</p>
+						<button id="btn-99" class="card-btn" onclick="openPaymentModal(250, '99,00')">Buy</button>
 					</div>
 				</div>
 
@@ -668,18 +668,8 @@
 			if (!currentUser) return;
 			
 			const metadata = currentUser.user_metadata || {};
-			
-			// 1. Limit 4.99 € package to a single purchase
-			if (metadata.purchased_499 === true) {
-				const btn499 = document.getElementById('btn-499');
-				if (btn499) {
-					btn499.disabled = true;
-					btn499.textContent = "Acquired";
-					btn499.title = "This exclusive welcome offer is limited to 1 purchase per account.";
-				}
-			}
 
-			// 2. Limit Free Token to a single claim
+			// Opcional: Limit Free Token to a single claim
 			if (metadata.claimed_free === true) {
 				const btnFree = document.getElementById('btn-free');
 				if (btnFree) {
@@ -777,11 +767,6 @@
 					credits: newCredits
 				};
 
-				// If welcome pack is bought, set limit boolean
-				if (creditsToAdd === 10 && price === '4,99') {
-					updatePayload.purchased_499 = true;
-				}
-
 				// Simulate gateway delay (1.5 seconds)
 				await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -840,6 +825,23 @@
 				});
 
 				if (error) throw error;
+
+				// Send notification email to the owner and confirmation to the client using send-email Edge Function
+				try {
+					const emailPayload = {
+						type: 'Contacto Empresas',
+						to: email, // Client
+						customerName: nombre,
+						customerPhone: telefono,
+						orderId: Math.floor(100000 + Math.random() * 900000),
+						categoria: empresa, // Mapped as "Tipo de joya" in the email template
+						material: localidad, // Mapped as "Material"
+						sugerencias: mensaje // Mapped as "Instrucciones" / "Notes"
+					};
+					await callEdgeFunction('send-email', emailPayload);
+				} catch(mailErr) {
+					console.warn("Error sending email notification:", mailErr);
+				}
 
 				closeModal('enterprise-modal');
 				showNotification("Inquiry sent successfully! We will contact you shortly.", "success");
