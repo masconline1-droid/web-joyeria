@@ -159,6 +159,15 @@ async function initHeaderAuth() {
 						font-size: 0.65rem !important;
 					}
 				}
+				#header-credits-badge .credits-plus {
+					transition: all 0.2s ease-in-out;
+				}
+				#header-credits-badge:hover .credits-plus {
+					background: #000 !important;
+					color: #fff !important;
+					transform: scale(1.15);
+					box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+				}
 			`;
 			document.head.appendChild(style);
 		}
@@ -180,11 +189,11 @@ async function initHeaderAuth() {
 			container.innerHTML = `
 				<div id="header-credits-badge" onclick="window.location.href='./compra-creditos.html'" style="background:linear-gradient(135deg, hsl(45 95% 95%) 0%, hsl(45 90% 88%) 100%); border:1px solid hsl(45 70% 60%); color:hsl(45 100% 15%); padding:6px 14px; border-radius:100px; display:flex; align-items:center; gap:10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:0.9rem; font-weight:800; box-shadow:0 4px 12px rgba(212,175,55,0.15); cursor:pointer; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); user-select:none;" onmouseover="this.style.transform='translateY(-1px) scale(1.02)'; this.style.boxShadow='0 6px 15px rgba(212,175,55,0.25)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(212,175,55,0.15)'" title="Your credits - Click to add more">
 					<div style="display:flex; align-items:center; gap:6px;">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M11 3 8 9l4 12"/><path d="M13 3l3 6-4 12"/><path d="M2 9h20"/></svg>
 						<span id="credit-count-header" style="font-feature-settings: 'tnum' 1; min-width: 1.5ch; text-align: center;">${credits}</span>
 					</div>
 					<span class="credits-label" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; opacity:0.9; font-weight:700; border-left:1px solid rgba(0,0,0,0.1); padding-left:10px; margin-left:2px;">Credits</span>
-					<div class="credits-plus" style="background:white; color:hsl(45 100% 20%); width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.1);">+</div>
+					<div class="credits-plus" style="background:hsl(45 100% 20%); color:white; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.15);">+</div>
 				</div>
 
 				<div style="position:relative;">
