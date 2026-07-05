@@ -426,4 +426,64 @@ window.redirectToStripeCheckout = async function(plan, element, lang = 'en') {
 	}
 };
 
-window.addEventListener('load', () => initWhenReady(null));
+// ═══════════════════════════════════════
+// WhatsApp Floating Button
+// ═══════════════════════════════════════
+const WHATSAPP_PHONE = '34600000000'; // Replace with the real WhatsApp number (with country code)
+
+function injectWhatsAppButton(lang = 'en') {
+	if (document.getElementById('whatsapp-container')) return;
+
+	const container = document.createElement('div');
+	container.id = 'whatsapp-container';
+	container.style.cssText = 'position:fixed; bottom:24px; right:24px; z-index:999999; display:flex; align-items:center; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; pointer-events:none;';
+
+	const tooltip = document.createElement('div');
+	tooltip.id = 'whatsapp-tooltip';
+	tooltip.textContent = lang === 'en' ? 'Chat with us' : 'Contacta con nosotros';
+	tooltip.style.cssText = 'background:white; color:#333; padding:8px 16px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.1); margin-right:12px; font-size:14px; font-weight:500; opacity:0; transform:translateX(10px); transition:all 0.3s ease; pointer-events:auto; white-space:nowrap; border:1px solid rgba(0,0,0,0.05);';
+
+	const button = document.createElement('a');
+	button.id = 'whatsapp-button';
+	button.href = `https://wa.me/${WHATSAPP_PHONE}`;
+	button.target = '_blank';
+	button.rel = 'noopener noreferrer';
+	button.style.cssText = 'width:60px; height:60px; background-color:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; box-shadow:0 4px 10px rgba(0,0,0,0.15); cursor:pointer; pointer-events:auto; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);';
+
+	button.innerHTML = `
+		<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+			<path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.503-5.727-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.002-2.637-1.03-5.115-2.906-6.99C16.257 1.876 13.779.845 11.14.845 5.704.845 1.282 5.263 1.277 10.697c-.001 1.708.452 3.376 1.312 4.8l-.946 3.454 3.535-.927zM17.483 14.34c-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.199-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.15-.173.198-.297.298-.495.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.568-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/>
+		</svg>
+	`;
+
+	const style = document.createElement('style');
+	style.id = 'whatsapp-style';
+	style.textContent = `
+		@keyframes whatsapp-pulse {
+			0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5), 0 4px 10px rgba(0, 0, 0, 0.15); }
+			70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0), 0 4px 10px rgba(0, 0, 0, 0.15); }
+			100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0), 0 4px 10px rgba(0, 0, 0, 0.15); }
+		}
+		#whatsapp-button {
+			animation: whatsapp-pulse 2s infinite;
+		}
+		#whatsapp-button:hover {
+			transform: translateY(-4px) scale(1.05);
+			background-color: #20ba5a !important;
+		}
+		#whatsapp-container:hover #whatsapp-tooltip {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	`;
+	document.head.appendChild(style);
+
+	container.appendChild(tooltip);
+	container.appendChild(button);
+	document.body.appendChild(container);
+}
+
+window.addEventListener('load', () => {
+	initWhenReady(null);
+	injectWhatsAppButton('en');
+});
