@@ -459,7 +459,7 @@ window.redirectToStripeCheckout = async function(plan, element, lang = 'es') {
 // ═══════════════════════════════════════
 // Botón Flotante de WhatsApp
 // ═══════════════════════════════════════
-const WHATSAPP_PHONE = '34600000000'; // Reemplazar por el número de WhatsApp real (con código de país)
+const WHATSAPP_PHONE = '34665663036'; // Reemplazar por el número de WhatsApp real (con código de país)
 
 function injectWhatsAppButton(lang = 'es') {
 	if (document.getElementById('whatsapp-container')) return;

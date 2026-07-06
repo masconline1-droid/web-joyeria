@@ -429,7 +429,7 @@ window.redirectToStripeCheckout = async function(plan, element, lang = 'en') {
 // ═══════════════════════════════════════
 // WhatsApp Floating Button
 // ═══════════════════════════════════════
-const WHATSAPP_PHONE = '34600000000'; // Replace with the real WhatsApp number (with country code)
+const WHATSAPP_PHONE = '34665663036'; // Replace with the real WhatsApp number (with country code)
 
 function injectWhatsAppButton(lang = 'en') {
 	if (document.getElementById('whatsapp-container')) return;
